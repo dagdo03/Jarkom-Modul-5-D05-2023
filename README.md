@@ -467,6 +467,7 @@ nc -lvp 8080
 
 <br>
 Sebelum menjalankan soal dibawah ini, running semua routing tanpa terkecuali. Setelah itu, running Revolte (DHCP Server). Bila terdapat error, lakukan 
+
 ```bash
 rm -r /var/run/dhcpd.pid
 service isc-dhcp-server start
@@ -482,7 +483,7 @@ ETH0_IP=$(ip -4 addr show eth0 | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
 iptables -t nat -A POSTROUTING -o eth0 -j SNAT --to $ETH0_IP
 ```
 
-Hasil Program
+Lakukan testing ping dan hasil program akan seperti ini :
 <br>
 
 Sein
@@ -499,17 +500,25 @@ Revolte
 
 ### 2. Kalian diminta untuk melakukan drop semua TCP dan UDP kecuali port 8080 pada TCP.
 
+Langkah yang dilakukan adalah install terlebih dahulu pada `TurkRegion` dengan command 
+
 ```bash
-ETH0_IP=$(ip -4 addr show eth0 | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
-iptables -t nat -A POSTROUTING -o eth0 -j SNAT --to $ETH0_IP
+iptables -A INPUT -p tcp --dport 8080 -j ACCEPT
+iptables -A INPUT -p tcp -j DROP
+iptables -A INPUT -p udp -s 10.24.0.0/20 -j DROP
 ```
-Langkah yang dilakukan adalah install terlebih dahulu pada `Grobeforest` dengan command 
+
+- `iptables -A INPUT -p tcp --dport 8080 -j ACCEPT` adalah opsi untuk menambahkan rule pada chain INPUT untuk menerima koneksi TCP pada port 8080
+- `iptables -A INPUT -p tcp -j DROP` adalah opsi untuk menambahkan rule pada chain INPUT untuk menolak koneksi TCP yang tidak menuju ke port 8080
+- `iptables -A INPUT -p udp -s 10.24.0.0/20 -j ` adalah opsi untuk menambahkan rule pada chain INPUT untuk menambahkan rule koneksi UDP pada ke port 8080
+
+
+Langkah yang dilakukan setelahnya adalah install terlebih dahulu pada `Grobeforest` dengan command 
 ```bash
-apt-get update
-apt-get install netcat -y
-# ip TurkRegion yang digunakan saat ini
+# ip TurkRegion yang digunakan saat ini (ipnya berubah-ubah)
 nc 10.24.8.5 8080 
 ```
+
 Maka hasil yang diperoleh adalah sebagai berikut
 
 Grobe Forest
@@ -525,69 +534,141 @@ nmap -p 22 20.24.0.10
 
 ### 3. Kepala Suku North Area meminta kalian untuk membatasi DHCP dan DNS Server hanya dapat dilakukan ping oleh maksimal 3 device secara bersamaan, selebihnya akan di drop.
 
+Pertama-tama, lakukan setting pada DHCP Server (Revolte) dan DNS Server (Richter) dengan command seperti ini :
+```bash
+iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+iptables -A INPUT -p icmp -m connlimit --connlimit-above 3 --connlimit-mask 0 -$
+```
+
+
 Lakukan ping pada Richter (DNS Server) dan Revolte (DHCP Server) dengan menggunakan 4 client sebagai testing. Apabila client 4 tidak bisa mengakses, maka program berjalan dengan baik
 
 #### Ping Richter
+
+```bash
+ping 10.24.2.4
+```
+
 LaubHills
+
 ![Subnet Map](img/3LaubHills.png)
 
 SchewerMountains
+
 ![Subnet Map](img/3SchewerMountains.png)
 
 TurkRegion
+
 ![Subnet Map](img/3TurkRegion.png)
 
 GrobeForrest (Gagal Koneksi)
-![Subnet Map](img/2TurkRegion.png)
+
+![Subnet Map](img/3TurkRegion.png)
 
 #### Ping Revolte
+
+```bash
+ping 10.24.0.22
+```
+
 LaubHills
+
 ![Subnet Map](img/3LaubHillsB.png)
 
 SchewerMountains
+
 ![Subnet Map](img/3SchewerMountainsB.png)
 
 TurkRegion
+
 ![Subnet Map](img/3TurkRegionB.png)
 
 GrobeForrest
-![Subnet Map](img/2TurkRegionB.png)
+
+![Subnet Map](img/3TurkRegionB.png)
 
 ### 4. Lakukan pembatasan sehingga koneksi SSH pada Web Server hanya dapat dilakukan oleh masyarakat yang berada pada GrobeForest.
 
-Lakukan setting pada `Sein` dengan command 
+Lakukan setting pada `Sein dan Stark (Web Server)` dengan command 
 ```bash
 iptables -A INPUT -p tcp --dport 22 -s 10.24.4.0/22 -j ACCEPT
+iptables -A INPUT -p tcp --dport 22 -j DROP
 ```
+
 Jangan lupa melakukan command 
 ```bash
-iptables -F
 apt-get update
 bash .bashrc
 ```
 
-Lakukan setting pada `GrobeForrest` dengan command
-```bash
-nmap -p 22 10.24.4.2
-```
-hingga muncul seperti ini 
-![Subnet Map](img/4GrobeForrest.png)
-
-Lakukan command pada `Sein` dengan command
+- Testing
+Lakukan command pada `Sein atau Stark` dengan command
 ```bash
 nc -lvp 22
 ```
 
-Untuk cek hasil, lakukan command pada `Aura` dengan command 
+Lakukan command pada `GrobeForrest` untuk mengecek apakah jaringan sudah masuk atau terfilter 
+```bash
+nmap -p 22 10.24.4.2
+```
+
+Bila jaringan open, maka jalankan 
+```bash
+nc 10.24.4.2 22  
+```
+
+hingga muncul seperti ini 
+![Subnet Map](img/4GrobeForrest.png)
+
+
+Untuk cek hasil error, lakukan command pada node terserah. Disini saya menggunakan `Aura` dengan command 
 ```bash
 nmap -p 22 10.24.4.2
 ```
 ![Subnet Map](img/4Aura.png)
 
+Hasilnya jaringan terfiltered
+
 
 ### 5. Selain itu, akses menuju WebServer hanya diperbolehkan saat jam kerja yaitu Senin-Jumat pada pukul 08.00-16.00.
 
-![Subnet Map](img/IP.png)
+Lakukan setting pada `Sein dan Stark (Web Server)` dengan command 
+```bash
+iptables -A INPUT -p tcp --dport 22 -m time --timestart 12:00 --timestop 13:00 $
+iptables -A INPUT -p tcp --dport 22 -m time --timestart 11:00 --timestop 13:00 $
+iptables -A INPUT -p tcp --dport 22 -s 10.24.4.0/22 -m time --timestart 08:00 -$
+iptables -A INPUT -p tcp --dport 22 -j DROP
+```
+
+jangan lupa lakukan command ini apabila mengganti iptables
+```bash
+iptables -F
+```
+
+- Testing
+
+Lakukan command ini untuk mengecek kondisi waktu `Sein dan Stark` 
+```bash
+date
+```
+
+Lakukan command ini untuk mengganti waktu   `Sein dan Stark` 
+```bash
+#jam diluar waktu 
+date --set="2023-12-13 17:00:00"
+```
+
+Lakukan command ping pada `GrobeForrest` menuju ke ip `Sein atau Stark`
+```bash
+#jam diluar waktu 
+ping 10.24.4.2
+```
+
+
+Apabila hasil sukses atau gagal maka hasilnya akan seperti ini  
+
+![Subnet Map](img/5GrobeForrestB.png)
+
 
 ### 6. Lalu, karena ternyata terdapat beberapa waktu di mana network administrator dari WebServer tidak bisa stand by, sehingga perlu ditambahkan rule bahwa akses pada hari Senin - Kamis pada jam 12.00 - 13.00 dilarang (istirahat maksi cuy) dan akses di hari Jumat pada jam 11.00 - 13.00 juga dilarang (maklum, Jumatan rek).
 
