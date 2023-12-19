@@ -551,7 +551,7 @@ ping 10.24.2.4
 
 LaubHills
 
-![Subnet Map](img/3LaubHills.png)
+![Subnet Map](img/3Laubhills.png)
 
 SchewerMountains
 
@@ -573,7 +573,7 @@ ping 10.24.0.22
 
 LaubHills
 
-![Subnet Map](img/3LaubHillsB.png)
+![Subnet Map](img/3LaubhillsB.png)
 
 SchewerMountains
 
@@ -581,11 +581,11 @@ SchewerMountains
 
 TurkRegion
 
-![Subnet Map](img/3TurkRegionB.png)
+![Subnet Map](img/3TurkRegionb.png)
 
 GrobeForrest
 
-![Subnet Map](img/3TurkRegionB.png)
+![Subnet Map](img/3GrobeForrestB.png)
 
 ### 4. Lakukan pembatasan sehingga koneksi SSH pada Web Server hanya dapat dilakukan oleh masyarakat yang berada pada GrobeForest.
 
